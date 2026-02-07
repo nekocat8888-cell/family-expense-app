@@ -1,0 +1,7 @@
+credentials.json
+credentials_backup.json
+.streamlit/secrets.toml
+app_backup.py
+optimal-buffer-485616-v2-4371cd7cff25.json
+__pycache__/
+*.pyc
