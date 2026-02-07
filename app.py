@@ -85,6 +85,36 @@ st.set_page_config(page_title="家庭記帳", page_icon="🧾", layout="centered
 st.title("家庭記帳")
 st.caption("可多人使用，資料寫入 Google 試算表")
 
+st.markdown(
+    """
+    <style>
+    div[data-testid="stRadio"] > div {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+    }
+    div[data-testid="stRadio"] label {
+        border: 1px solid #e4e7ec;
+        border-radius: 14px;
+        padding: 10px 12px;
+        background: #f8fafc;
+        margin: 0 !important;
+        font-weight: 600;
+        text-align: center;
+    }
+    div[data-testid="stRadio"] label:hover {
+        border-color: #94a3b8;
+        background: #f1f5f9;
+    }
+    div[data-testid="stRadio"] input:checked + div {
+        border: 2px solid #2563eb;
+        background: #eff6ff;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 with st.sidebar:
     st.header("設定")
     sheet_name = st.text_input("Google 試算表名稱", value=DEFAULT_SHEET_NAME)
