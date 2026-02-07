@@ -13,6 +13,7 @@ SCOPES = [
 ]
 
 DEFAULT_SHEET_NAME = "Family_Expenses"
+DEFAULT_SHEET_ID = "1RwxVkaWAJfkhqiwwdRTwEXhdyj8aky-wrZOO0JQNXHQ"
 DEFAULT_CATEGORIES = ["餐飲", "交通", "生活", "娛樂", "醫療", "教育", "其他"]
 DEFAULT_PAYMENTS = ["現金", "信用卡", "轉帳", "行動支付", "其他"]
 
@@ -79,7 +80,8 @@ st.caption("可多人使用，資料寫入 Google 試算表")
 with st.sidebar:
     st.header("設定")
     sheet_name = st.text_input("Google 試算表名稱", value=DEFAULT_SHEET_NAME)
-    sheet_id = st.text_input("或輸入 Google 試算表 ID", value="")
+    sheet_id = DEFAULT_SHEET_ID
+    st.write("使用預設試算表 ID")
     st.write("請先在 Google Drive 建立試算表，並分享給服務帳戶 email")
 
 client = get_client()
