@@ -16,6 +16,7 @@ DEFAULT_SHEET_NAME = "Family_Expenses"
 DEFAULT_SHEET_ID = "1RwxVkaWAJfkhqiwwdRTwEXhdyj8aky-wrZOO0JQNXHQ"
 DEFAULT_CATEGORIES = ["餐飲", "交通", "生活", "娛樂", "醫療", "教育", "其他"]
 DEFAULT_PAYMENTS = ["現金", "信用卡", "轉帳", "行動支付", "其他"]
+DEFAULT_USERS = ["Rick", "Karen", "Max", "Mic"]
 
 
 def load_credentials():
@@ -109,13 +110,13 @@ else:
 with st.form("expense_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
+        user = st.radio("使用人", DEFAULT_USERS, horizontal=True)
         expense_date = st.date_input("日期", value=date.today())
         amount = st.number_input("金額", min_value=0.0, step=1.0, format="%.0f")
-        category = st.selectbox("分類", DEFAULT_CATEGORIES)
     with col2:
         payment = st.selectbox("付款方式", DEFAULT_PAYMENTS)
+        category = st.selectbox("分類", DEFAULT_CATEGORIES)
         note = st.text_input("備註")
-        user = st.text_input("使用人", placeholder="例如：爸爸 / 媽媽 / 小孩")
 
     submitted = st.form_submit_button("新增紀錄")
 
