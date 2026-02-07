@@ -19,6 +19,7 @@ DEFAULT_PAYMENTS = ["現金", "信用卡", "轉帳", "行動支付", "其他"]
 
 
 def load_credentials():
+    # 優先使用本地檔案
     if os.path.exists("credentials.json"):
         try:
             return Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
@@ -27,9 +28,15 @@ def load_credentials():
                 info = json.load(fh)
             return Credentials.from_service_account_info(info, scopes=SCOPES)
 
-    info = st.secrets.get("gcp_service_account")
-    if isinstance(info, dict) and info.get("client_email") and info.get("token_uri"):
-        return Credentials.from_service_account_info(info, scopes=SCOPES)
+    # 檔案不存在，改讀 Streamlit Secrets
+    try:
+        if "gcp_service_account" in st.secrets:
+            # AttrDict -> dict，避免型別相容問題
+            info = dict(st.secrets["gcp_service_account"])
+            if info.get("private_key") and info.get("client_email"):
+                return Credentials.from_service_account_info(info, scopes=SCOPES)
+    except Exception as exc:
+        st.error(f"解析 Secrets 時發生錯誤: {exc}")
 
     st.error("找不到 credentials.json，或未正確設定 Streamlit secrets 的 gcp_service_account。")
     st.stop()
