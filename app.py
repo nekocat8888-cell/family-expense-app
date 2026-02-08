@@ -17,27 +17,39 @@ st.title("家庭記帳")
 st.caption("可多人使用，資料寫入 Google 試算表")
 
 st.subheader("快速導覽")
-col1, col2, col3 = st.columns(3)
-with col1:
-    if st.button("記帳"):
-        try:
-            st.switch_page("pages/1_expense.py")
-        except Exception:
-            st.info("請使用左側導覽切換頁面。")
-with col2:
-    if st.button("統計記帳結果"):
-        try:
-            st.switch_page("pages/2_stats.py")
-        except Exception:
-            st.info("請使用左側導覽切換頁面。")
-with col3:
-    if st.button("股票資料"):
-        try:
-            st.switch_page("pages/3_stock.py")
-        except Exception:
-            st.info("請使用左側導覽切換頁面。")
+st.markdown(
+    """
+    <style>
+    .nav-btn {
+        display: inline-block;
+        padding: 10px 16px;
+        border: 1px solid #d0d5dd;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        color: inherit;
+        background: #ffffff;
+    }
+    .nav-btn:hover {
+        background: #f8fafc;
+        border-color: #98a2b3;
+    }
+    .nav-wrap {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+    </style>
+    <div class="nav-wrap">
+        <a class="nav-btn" href="/1_expense">記帳</a>
+        <a class="nav-btn" href="/2_stats">統計記帳結果</a>
+        <a class="nav-btn" href="/3_stock">股票資料</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-st.markdown("也可使用左側導覽切換頁面。")
+st.markdown("若無法跳轉，請使用左側導覽切換頁面。")
 
 _, worksheet = get_sheet_context()
 
