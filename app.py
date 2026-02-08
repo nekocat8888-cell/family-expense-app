@@ -19,11 +19,23 @@ st.caption("可多人使用，資料寫入 Google 試算表")
 st.subheader("快速導覽")
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.page_link("pages/1_expense.py", label="記帳", icon="🧾")
+    if st.button("記帳"):
+        try:
+            st.switch_page("pages/1_expense.py")
+        except Exception:
+            st.info("請使用左側導覽切換頁面。")
 with col2:
-    st.page_link("pages/2_stats.py", label="統計記帳結果", icon="📊")
+    if st.button("統計記帳結果"):
+        try:
+            st.switch_page("pages/2_stats.py")
+        except Exception:
+            st.info("請使用左側導覽切換頁面。")
 with col3:
-    st.page_link("pages/3_stock.py", label="股票資料", icon="📈")
+    if st.button("股票資料"):
+        try:
+            st.switch_page("pages/3_stock.py")
+        except Exception:
+            st.info("請使用左側導覽切換頁面。")
 
 st.markdown("也可使用左側導覽切換頁面。")
 
