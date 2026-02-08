@@ -1,111 +1,33 @@
-﻿import json
-import os
 from datetime import date
 
-import pandas as pd
-import gspread
 import streamlit as st
-from google.oauth2.service_account import Credentials
 
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
-
-DEFAULT_SHEET_NAME = "Family_Expenses"
-DEFAULT_SHEET_ID = "1RwxVkaWAJfkhqiwwdRTwEXhdyj8aky-wrZOO0JQNXHQ"
-DEFAULT_CATEGORIES = ["餐飲", "交通", "生活", "娛樂", "醫療", "教育", "其他"]
-DEFAULT_PAYMENTS = ["現金", "信用卡", "轉帳", "行動支付", "其他"]
-DEFAULT_USERS = ["Rick", "Karen", "Max", "Mic"]
-
-
-def load_credentials():
-    # 優先使用本地檔案
-    if os.path.exists("credentials.json"):
-        try:
-            return Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
-        except Exception:
-            with open("credentials.json", "r", encoding="utf-8-sig") as fh:
-                info = json.load(fh)
-            return Credentials.from_service_account_info(info, scopes=SCOPES)
-
-    # 檔案不存在，改讀 Streamlit Secrets
-    try:
-        if "gcp_service_account" in st.secrets:
-            # AttrDict -> dict，避免型別相容問題
-            info = dict(st.secrets["gcp_service_account"])
-            if info.get("private_key") and info.get("client_email"):
-                return Credentials.from_service_account_info(info, scopes=SCOPES)
-    except Exception as exc:
-        st.error(f"解析 Secrets 時發生錯誤: {exc}")
-
-    st.error("找不到 credentials.json，或未正確設定 Streamlit secrets 的 gcp_service_account。")
-    st.stop()
-
-
-def get_client():
-    creds = load_credentials()
-    return gspread.authorize(creds)
-
-
-def open_or_create_sheet(client, sheet_name: str):
-    try:
-        spreadsheet = client.open(sheet_name)
-    except gspread.SpreadsheetNotFound:
-        st.error(
-            "找不到該試算表。請先在你的 Google Drive 建立試算表，並分享給服務帳戶的 email。"
-        )
-        st.stop()
-    try:
-        worksheet = spreadsheet.worksheet("data")
-    except gspread.WorksheetNotFound:
-        worksheet = spreadsheet.add_worksheet(title="data", rows=2000, cols=10)
-        worksheet.append_row(["日期", "金額", "分類", "付款方式", "備註", "使用人", "建立時間"])
-    return spreadsheet, worksheet
-
-
-def append_expense_row(worksheet, row):
-    worksheet.append_row(row, value_input_option="USER_ENTERED")
-
-
-def fetch_recent(worksheet, limit=50):
-    values = worksheet.get_all_values()
-    if len(values) <= 1:
-        return pd.DataFrame(columns=values[0] if values else [])
-    header = values[0]
-    data = values[1:]
-    df = pd.DataFrame(data, columns=header)
-    if "金額" in df.columns:
-        df["金額"] = pd.to_numeric(df["金額"], errors="coerce")
-    return df.tail(limit)
-
+from utils import (
+    DEFAULT_CATEGORIES,
+    DEFAULT_PAYMENTS,
+    DEFAULT_USERS,
+    append_expense_row,
+    fetch_recent,
+    get_sheet_context,
+)
 
 st.set_page_config(page_title="家庭記帳", page_icon="🧾", layout="centered")
 
 st.title("家庭記帳")
 st.caption("可多人使用，資料寫入 Google 試算表")
 
-with st.sidebar:
-    st.header("設定")
-    sheet_name = st.text_input("Google 試算表名稱", value=DEFAULT_SHEET_NAME)
-    sheet_id = DEFAULT_SHEET_ID
-    st.write("使用預設試算表 ID")
-    st.write("請先在 Google Drive 建立試算表，並分享給服務帳戶 email")
+st.subheader("快速導覽")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.page_link("pages/1_expense.py", label="記帳", icon="🧾")
+with col2:
+    st.page_link("pages/2_stats.py", label="統計記帳結果", icon="📊")
+with col3:
+    st.page_link("pages/3_stock.py", label="股票資料", icon="📈")
 
-client = get_client()
-if sheet_id.strip():
-    try:
-        spreadsheet = client.open_by_key(sheet_id.strip())
-        try:
-            worksheet = spreadsheet.worksheet("data")
-        except gspread.WorksheetNotFound:
-            worksheet = spreadsheet.add_worksheet(title="data", rows=2000, cols=10)
-            worksheet.append_row(["日期", "金額", "分類", "付款方式", "備註", "使用人", "建立時間"])
-    except Exception:
-        st.error("無法使用該試算表 ID，請確認已分享給服務帳戶。")
-        st.stop()
-else:
-    spreadsheet, worksheet = open_or_create_sheet(client, sheet_name)
+st.markdown("也可使用左側導覽切換頁面。")
+
+_, worksheet = get_sheet_context()
 
 st.subheader("使用人")
 selected_user = st.radio("使用人", DEFAULT_USERS, horizontal=True, key="selected_user")
@@ -141,21 +63,3 @@ if recent_df.empty:
     st.info("目前還沒有資料")
 else:
     st.dataframe(recent_df, use_container_width=True)
-
-st.subheader("統計")
-if "show_stats" not in st.session_state:
-    st.session_state["show_stats"] = False
-if st.button("開始統計"):
-    st.session_state["show_stats"] = True
-if st.session_state["show_stats"] and not recent_df.empty and "金額" in recent_df.columns:
-    filtered = recent_df
-    selected_user = st.session_state.get("selected_user", selected_user)
-    if "使用人" in recent_df.columns:
-        filtered = recent_df[recent_df["使用人"] == selected_user]
-    st.write(f"使用人：{selected_user}")
-    if filtered.empty:
-        st.info("此使用人目前沒有資料")
-    else:
-        summary_category = filtered.groupby("分類")["金額"].sum().reset_index()
-        st.write("按分類")
-        st.dataframe(summary_category, use_container_width=True)
