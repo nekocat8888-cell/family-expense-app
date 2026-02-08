@@ -1,4 +1,4 @@
-from datetime import date
+﻿from datetime import date
 
 import streamlit as st
 
@@ -23,8 +23,10 @@ if "section" not in st.session_state:
 if "auth_ok" not in st.session_state:
     st.session_state["auth_ok"] = False
 
+
 def _set_section(name: str):
     st.session_state["section"] = name
+
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -34,8 +36,7 @@ with col2:
 with col3:
     st.button("股票資料", use_container_width=True, on_click=_set_section, args=("股票",))
 
-_, worksheet = get_sheet_context()
-spreadsheet, _ = get_sheet_context()
+spreadsheet, worksheet = get_sheet_context()
 
 section = st.session_state["section"]
 protected_sections = {"統計", "股票"}
@@ -83,6 +84,44 @@ if section == "記帳":
         append_expense_row(worksheet, row)
         st.success("已新增到 Google 試算表")
 
+    st.subheader("股票買賣紀錄")
+    try:
+        stock_ws = spreadsheet.worksheet("stock")
+    except Exception:
+        stock_ws = spreadsheet.add_worksheet(title="stock", rows=2000, cols=12)
+        stock_ws.append_row(["代碼", "股數", "持有人", "金額", "時間", "買or賣", "備註"])
+
+    with st.form("stock_trade_form", clear_on_submit=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            symbol = st.text_input("股票代碼", placeholder="例如：2330")
+            shares = st.number_input("股數", min_value=0.0, step=1.0, format="%.0f")
+        with col2:
+            trade_type = st.selectbox("買or賣", ["買", "賣"])
+            amount = st.number_input("金額", min_value=0.0, step=1.0, format="%.0f")
+        with col3:
+            trade_time = st.date_input("時間", value=date.today())
+            holder = selected_user
+
+        trade_note = st.text_input("備註", key="trade_note")
+        trade_submit = st.form_submit_button("新增買賣紀錄")
+
+    if trade_submit:
+        if not symbol.strip():
+            st.error("請輸入股票代碼")
+        else:
+            trade_row = [
+                symbol.strip(),
+                shares,
+                holder.strip(),
+                amount,
+                trade_time.strftime("%Y-%m-%d"),
+                trade_type,
+                trade_note.strip(),
+            ]
+            stock_ws.append_row(trade_row, value_input_option="USER_ENTERED")
+            st.success("已新增買賣紀錄")
+
     st.subheader("最近紀錄")
     recent_df = fetch_recent(worksheet, limit=30)
     if recent_df.empty:
@@ -125,6 +164,6 @@ else:
     else:
         stock_df = worksheet_to_df(stock_ws)
         if stock_df.empty:
-            st.info("stock 分頁目前沒有資料。")
+            st.info("list 分頁目前沒有資料。")
         else:
             st.dataframe(stock_df, use_container_width=True)
