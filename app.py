@@ -8,6 +8,7 @@ from utils import (
     DEFAULT_USERS,
     append_expense_row,
     fetch_recent,
+    worksheet_to_df,
     get_sheet_context,
 )
 
@@ -19,6 +20,8 @@ st.caption("可多人使用，資料寫入 Google 試算表")
 st.subheader("功能切換")
 if "section" not in st.session_state:
     st.session_state["section"] = "記帳"
+if "auth_ok" not in st.session_state:
+    st.session_state["auth_ok"] = False
 
 def _set_section(name: str):
     st.session_state["section"] = name
@@ -32,8 +35,24 @@ with col3:
     st.button("股票資料", use_container_width=True, on_click=_set_section, args=("股票",))
 
 _, worksheet = get_sheet_context()
+spreadsheet, _ = get_sheet_context()
 
 section = st.session_state["section"]
+protected_sections = {"統計", "股票"}
+password_required = section in protected_sections
+password = st.secrets.get("app_password", "")
+
+if password_required and not st.session_state["auth_ok"]:
+    st.subheader("需要密碼")
+    st.write("此功能需輸入密碼才能查看。")
+    input_pwd = st.text_input("密碼", type="password")
+    if st.button("解鎖"):
+        if input_pwd and input_pwd == password:
+            st.session_state["auth_ok"] = True
+            st.success("已解鎖")
+        else:
+            st.error("密碼錯誤")
+    st.stop()
 
 if section == "記帳":
     st.subheader("使用人")
@@ -96,4 +115,16 @@ elif section == "統計":
 
 else:
     st.subheader("股票資料")
-    st.info("股票資料功能尚未啟用。如需接上現有股票程式，告訴我要顯示哪些內容。")
+    try:
+        stock_ws = spreadsheet.worksheet("list")
+    except Exception:
+        stock_ws = None
+
+    if stock_ws is None:
+        st.info("找不到 list 分頁，請在 Google 試算表建立名為 list 的工作表。")
+    else:
+        stock_df = worksheet_to_df(stock_ws)
+        if stock_df.empty:
+            st.info("stock 分頁目前沒有資料。")
+        else:
+            st.dataframe(stock_df, use_container_width=True)
