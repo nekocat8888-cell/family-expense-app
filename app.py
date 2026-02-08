@@ -17,18 +17,39 @@ st.title("家庭記帳")
 st.caption("可多人使用，資料寫入 Google 試算表")
 
 st.subheader("快速導覽")
-col1, col2, col3 = st.columns(3)
-with col1:
-    if st.button("記帳", use_container_width=True):
-        st.switch_page("pages/1_expense.py")
-with col2:
-    if st.button("統計記帳結果", use_container_width=True):
-        st.switch_page("pages/2_stats.py")
-with col3:
-    if st.button("股票資料", use_container_width=True):
-        st.switch_page("pages/3_stock.py")
+st.markdown(
+    """
+    <style>
+    .nav-btn {
+        display: inline-block;
+        padding: 10px 16px;
+        border: 1px solid #d0d5dd;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        color: inherit;
+        background: #ffffff;
+        margin-right: 12px;
+    }
+    .nav-btn:hover {
+        background: #f8fafc;
+        border-color: #98a2b3;
+    }
+    </style>
+    <a class="nav-btn" href="?nav=expense">記帳</a>
+    <a class="nav-btn" href="?nav=stats">統計記帳結果</a>
+    <a class="nav-btn" href="?nav=stock">股票資料</a>
+    """,
+    unsafe_allow_html=True,
+)
 
-st.markdown("若無法跳轉，請使用左側導覽切換頁面。")
+nav = st.query_params.get("nav", "")
+if nav == "expense":
+    st.info("請使用左側導覽切換到「記帳」頁面。")
+elif nav == "stats":
+    st.info("請使用左側導覽切換到「統計記帳結果」頁面。")
+elif nav == "stock":
+    st.info("請使用左側導覽切換到「股票資料」頁面。")
 
 _, worksheet = get_sheet_context()
 
