@@ -107,10 +107,12 @@ if sheet_id.strip():
 else:
     spreadsheet, worksheet = open_or_create_sheet(client, sheet_name)
 
+st.subheader("使用人")
+selected_user = st.radio("使用人", DEFAULT_USERS, horizontal=True, key="selected_user")
+
 with st.form("expense_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     with col1:
-        user = st.radio("使用人", DEFAULT_USERS, horizontal=True)
         expense_date = st.date_input("日期", value=date.today())
         amount = st.number_input("金額", min_value=0.0, step=1.0, format="%.0f")
     with col2:
@@ -121,20 +123,17 @@ with st.form("expense_form", clear_on_submit=True):
     submitted = st.form_submit_button("新增紀錄")
 
 if submitted:
-    if not user.strip():
-        st.error("請輸入使用人")
-    else:
-        row = [
-            expense_date.strftime("%Y-%m-%d"),
-            amount,
-            category,
-            payment,
-            note.strip(),
-            user.strip(),
-            date.today().strftime("%Y-%m-%d"),
-        ]
-        append_expense_row(worksheet, row)
-        st.success("已新增到 Google 試算表")
+    row = [
+        expense_date.strftime("%Y-%m-%d"),
+        amount,
+        category,
+        payment,
+        note.strip(),
+        selected_user.strip(),
+        date.today().strftime("%Y-%m-%d"),
+    ]
+    append_expense_row(worksheet, row)
+    st.success("已新增到 Google 試算表")
 
 st.subheader("最近紀錄")
 recent_df = fetch_recent(worksheet, limit=30)
@@ -144,10 +143,19 @@ else:
     st.dataframe(recent_df, use_container_width=True)
 
 st.subheader("統計")
-if not recent_df.empty and "金額" in recent_df.columns:
-    summary_user = recent_df.groupby("使用人")["金額"].sum().reset_index()
-    summary_category = recent_df.groupby("分類")["金額"].sum().reset_index()
-    st.write("按使用人")
-    st.dataframe(summary_user, use_container_width=True)
-    st.write("按分類")
-    st.dataframe(summary_category, use_container_width=True)
+if "show_stats" not in st.session_state:
+    st.session_state["show_stats"] = False
+if st.button("開始統計"):
+    st.session_state["show_stats"] = True
+if st.session_state["show_stats"] and not recent_df.empty and "金額" in recent_df.columns:
+    filtered = recent_df
+    selected_user = st.session_state.get("selected_user", selected_user)
+    if "使用人" in recent_df.columns:
+        filtered = recent_df[recent_df["使用人"] == selected_user]
+    st.write(f"使用人：{selected_user}")
+    if filtered.empty:
+        st.info("此使用人目前沒有資料")
+    else:
+        summary_category = filtered.groupby("分類")["金額"].sum().reset_index()
+        st.write("按分類")
+        st.dataframe(summary_category, use_container_width=True)
