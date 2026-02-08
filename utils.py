@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 
 import gspread
@@ -86,8 +86,8 @@ def append_expense_row(worksheet, row):
 def fetch_recent(worksheet, limit=50):
     values = worksheet.get_all_values()
     if len(values) <= 1:
-        return pd.DataFrame(columns=values[0] if values else [])
-    header = values[0]
+        return pd.DataFrame(columns=_normalize_header(values[0]) if values else [])
+    header = _normalize_header(values[0])
     data = values[1:]
     df = pd.DataFrame(data, columns=header)
     if "金額" in df.columns:
@@ -99,6 +99,22 @@ def worksheet_to_df(worksheet):
     values = worksheet.get_all_values()
     if not values:
         return pd.DataFrame()
-    header = values[0]
+    header = _normalize_header(values[0])
     data = values[1:]
     return pd.DataFrame(data, columns=header)
+
+
+def _normalize_header(header):
+    if not header:
+        return []
+    normalized = []
+    counts = {}
+    for idx, name in enumerate(header, start=1):
+        base = (name or "").strip() or f"欄位{idx}"
+        counts.setdefault(base, 0)
+        counts[base] += 1
+        if counts[base] > 1:
+            normalized.append(f"{base}_{counts[base]}")
+        else:
+            normalized.append(base)
+    return normalized
