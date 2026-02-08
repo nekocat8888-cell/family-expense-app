@@ -93,3 +93,12 @@ def fetch_recent(worksheet, limit=50):
     if "金額" in df.columns:
         df["金額"] = pd.to_numeric(df["金額"], errors="coerce")
     return df.tail(limit)
+
+
+def worksheet_to_df(worksheet):
+    values = worksheet.get_all_values()
+    if not values:
+        return pd.DataFrame()
+    header = values[0]
+    data = values[1:]
+    return pd.DataFrame(data, columns=header)
